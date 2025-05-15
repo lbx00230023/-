@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>森林防火预测监测系统</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div id="app">
+        <div class="container-fluid">
+            <div class="row">
+                <!-- 登录表单 -->
+                <div v-if="!isLoggedIn">
+                    <div class="system-title">
+                        <h1>森林守护者 - 森林防火预测监测系统</h1>
+                    </div>
+                    <div class="col-md-4 offset-md-4 mt-5">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h4 class="text-center">系统登录</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-danger" v-if="loginError">
+                                    [[ loginError ]]
+                                </div>
+                                <div class="alert alert-danger" v-if="registerError">
+                                    [[ registerError ]]
+                                </div>
+                                <div class="alert alert-success" v-if="registerSuccess">
+                                    [[ registerSuccess ]]
+                                </div>
+                                <form @submit.prevent="login" v-if="!showRegisterForm">
+                                    <div class="form-group">
+                                        <label for="username">用户名</label>
+                                        <input type="text" class="form-control" id="username" v-model="loginForm.username" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="password">密码</label>
+                                        <input type="password" class="form-control" id="password" v-model="loginForm.password" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-success btn-block">登录</button>
+                                    <div class="text-center mt-3">
+                                        <a href="#" @click.prevent="showRegisterForm = true">没有账号？点击注册</a>
+                                    </div>
+                                </form>
+                                
+                                <form @submit.prevent="register" v-if="showRegisterForm">
+                                    <div class="form-group">
+                                        <label for="reg-username">用户名</label>
+                                        <input type="text" class="form-control" id="reg-username" v-model="registerForm.username" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="reg-email">邮箱</label>
+                                        <input type="email" class="form-control" id="reg-email" v-model="registerForm.email" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="reg-password">密码</label>
+                                        <input type="password" class="form-control" id="reg-password" v-model="registerForm.password" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="reg-confirm-password">确认密码</label>
+                                        <input type="password" class="form-control" id="reg-confirm-password" v-model="registerForm.confirmPassword" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-success btn-block">注册</button>
+                                    <div class="text-center mt-3">
+                                        <a href="#" @click.prevent="showRegisterForm = false">已有账号？点击登录</a>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 主应用界面 -->
+                <div class="col-md-12" v-else>
+                    <nav class="navbar navbar-expand-lg navbar-dark bg-success">
+                        <a class="navbar-brand" href="#">森林防火预测监测系统</a>
+                        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+                            <span class="navbar-toggler-icon"></span>
+                        </button>
+                        <div class="collapse navbar-collapse" id="navbarNav">
+                            <ul class="navbar-nav mr-auto">
+                                <li class="nav-item" :class="{active: currentView === 'monitor'}">
+                                    <a class="nav-link" href="#" @click="currentView = 'monitor'">监测信息管理</a>
+                                </li>
+                                <li class="nav-item" :class="{active: currentView === 'prediction'}">
+                                    <a class="nav-link" href="#" @click="currentView = 'prediction'">火灾预测</a>
+                                </li>
+                                <li class="nav-item" v-if="isLoggedIn" :class="{active: currentView === 'fireSettings'}">
+                                    <a class="nav-link" href="#" @click="currentView = 'fireSettings'">火灾信息管理</a>
+                                </li>
+                                <li class="nav-item" v-if="isLoggedIn" :class="{active: currentView === 'stats'}">
+                                    <a class="nav-link" href="#" @click="currentView = 'stats'">火灾数据统计</a>
+                                </li>
+                                <li class="nav-item" v-if="isLoggedIn && user.role === 'admin'" :class="{active: currentView === 'users'}">
+                                    <a class="nav-link" href="#" @click="currentView = 'users'">用户管理</a>
+                                </li>
+                            </ul>
+                            <span class="navbar-text mr-3" v-if="isLoggedIn">
+                                欢迎, [[ user.username ]] ([[ user.role === 'admin' ? '管理员' : '普通用户' ]])
+                            </span>
+                            <button class="btn btn-outline-light" v-if="isLoggedIn" @click="logout">退出</button>
+                            <button class="btn btn-outline-light" v-else @click="currentView = 'monitor'; showRegisterForm = false; isLoggedIn = false;">登录</button>
+                        </div>
+                    </nav>
+
+                    <div class="container-fluid mt-3">
+                        <!-- 监测信息管理 -->
+                        <div v-if="currentView === 'monitor'">
+                            <h2>监测信息管理</h2>
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <div class="card">
+                                        <div class="card-header bg-light">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <h5>监测点数据</h5>
+                                                </div>
+                                                <div class="col-md-6 text-right">
+                                                    <button class="btn btn-sm btn-success" @click="openAddMonitorPointModal()" v-if="isLoggedIn && user.role === 'admin'">新增监测点</button>
+                                                    <button class="btn btn-sm btn-primary ml-2" @click="openAddMonitorRecordModal()" v-if="isLoggedIn">新增监测记录</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="table-responsive">
+                                                <table class="table table-striped">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>监测点</th>
+                                                            <th>风速 (m/s)</th>
+                                                            <th>温度 (°C)</th>
+                                                            <th>湿度 (%)</th>
+                                                            <th>经度</th>
+                                                            <th>纬度</th>
+                                                            <th>时间</th>
+                                                            <th>操作</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr v-for="record in monitorRecords" :key="record.id">
+                                                            <td>[[ record.monitor_point_name ]]</td>
+                                                            <td>[[ record.wind_speed ]]</td>
+                                                            <td>[[ record.temperature ]]</td>
+                                                            <td>[[ record.humidity ]]</td>
+                                                            <td>[[ record.longitude ]]</td>
+                                                            <td>[[ record.latitude ]]</td>
+                                                            <td>[[ record.timestamp ]]</td>
+                                                            <td>
+                                                                <button class="btn btn-sm btn-info mr-1" @click="viewMonitorDetail(record)">查看</button>
+                                                                <button class="btn btn-sm btn-danger" @click="deleteMonitorRecord(record.id)" v-if="isLoggedIn && user.role === 'admin'">删除</button>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 火灾预测 -->
+                        <div v-if="currentView === 'prediction'">
+                            <h2>火灾预测</h2>
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="card">
+                                        <div class="card-header bg-light">
+                                            <h5>实时火灾风险预测</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="table-responsive">
+                                                <table class="table table-striped">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>监测点</th>
+                                                            <th>风速 (m/s)</th>
+                                                            <th>温度 (°C)</th>
+                                                            <th>湿度 (%)</th>
+                                                            <th>风险等级</th>
+                                                            <th>预测面积 (km²)</th>
+                                                            <th>操作</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr v-for="prediction in firePredictions" :key="prediction.monitor_point_id">
+                                                            <td>[[ prediction.monitor_point_name ]]</td>
+                                                            <td>[[ prediction.wind_speed ]]</td>
+                                                            <td>[[ prediction.temperature ]]</td>
+                                                            <td>[[ prediction.humidity ]]</td>
+                                                            <td>
+                                                                <span :class="getRiskClass(prediction.risk_level)">
+                                                                    [[ getRiskText(prediction.risk_level) ]]
+                                                                </span>
+                                                            </td>
+                                                            <td>[[ prediction.predicted_area ]]</td>
+                                                            <td>
+                                                                <button class="btn btn-sm btn-success" @click="savePrediction(prediction)" v-if="isLoggedIn">保存</button>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card">
+                                        <div class="card-header bg-light">
+                                            <h5>自定义预测</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <form @submit.prevent="calculateCustomPrediction">
+                                                <div class="form-group">
+                                                    <label>风速 (m/s)</label>
+                                                    <input type="number" min="0" max="100" step="0.1" class="form-control" v-model.number="customPredictionForm.wind_speed" required>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>温度 (°C)</label>
+                                                    <input type="number" min="-50" max="100" step="0.1" class="form-control" v-model.number="customPredictionForm.temperature" required>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>湿度 (%)</label>
+                                                    <input type="number" min="0" max="100" step="0.1" class="form-control" v-model.number="customPredictionForm.humidity" required>
+                                                </div>
+                                                <button type="submit" class="btn btn-primary">计算预测</button>
+                                            </form>
+
+                                            <div class="mt-3" v-if="customPredictionResult">
+                                                <div class="alert" :class="getRiskAlertClass(customPredictionResult.risk_level)">
+                                                    <h5>预测结果</h5>
+                                                    <p>风险等级: <strong>[[ getRiskText(customPredictionResult.risk_level) ]]</strong></p>
+                                                    <p>预测火灾面积: <strong>[[ customPredictionResult.predicted_area ]] km²</strong></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 火灾信息管理 -->
+                        <div v-if="currentView === 'fireSettings'">
+                            <h2>火灾信息管理</h2>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header bg-light">
+                                            <h5>火灾风险阈值设置</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <form @submit.prevent="updateThresholds" v-if="user.role === 'admin'">
+                                                <div class="form-group">
+                                                    <label>风速阈值 (m/s)</label>
+                                                    <input type="number" min="0.1" max="100" step="0.1" class="form-control" v-model.number="thresholdForm.wind_speed_threshold" required>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>温度阈值 (°C)</label>
+                                                    <input type="number" min="0.1" max="100" step="0.1" class="form-control" v-model.number="thresholdForm.temperature_threshold" required>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>湿度阈值 (%)</label>
+                                                    <input type="number" min="0.1" max="99.9" step="0.1" class="form-control" v-model.number="thresholdForm.humidity_threshold" required>
+                                                </div>
+                                                <button type="submit" class="btn btn-success">更新阈值</button>
+                                            </form>
+                                            <div v-else>
+                                                <div class="alert alert-info">
+                                                    <h5>当前阈值设置</h5>
+                                                    <p>风速阈值: <strong>[[ thresholdForm.wind_speed_threshold ]] m/s</strong></p>
+                                                    <p>温度阈值: <strong>[[ thresholdForm.temperature_threshold ]] °C</strong></p>
+                                                    <p>湿度阈值: <strong>[[ thresholdForm.humidity_threshold ]] %</strong></p>
+                                                    <p class="small text-muted">注: 需要管理员权限才能修改阈值</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header bg-light">
+                                            <h5>预测面积计算方法</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="alert alert-info">
+                                                <h5>面积计算公式</h5>
+                                                <p>面积 = 基础面积 × (1 + 风速因子) × 温度因子 × (1 - 湿度因子)</p>
+                                                <hr>
+                                                <h6>因子说明:</h6>
+                                                <ul>
+                                                    <li>基础面积：基于风险等级确定
+                                                        <ul>
+                                                            <li>低风险: 0 km²</li>
+                                                            <li>中风险: 0.5 km²</li>
+                                                            <li>高风险: 2.0 km²</li>
+                                                            <li>极高风险: 5.0 km²</li>
+                                                        </ul>
+                                                    </li>
+                                                    <li>风速因子：风速每增加1m/s，火灾蔓延面积增加10%</li>
+                                                    <li>温度因子：基础为1.0，温度每超过25°C增加5%</li>
+                                                    <li>湿度因子：湿度越高，蔓延越慢。湿度100%时因子为0，湿度0%时因子为0.8</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 火灾数据统计 -->
+                        <div v-if="currentView === 'stats'">
+                            <h2>火灾数据统计</h2>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header bg-light">
+                                            <h5>火灾风险分布</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="alert alert-success">
+                                                <h6>低风险: [[ fireRiskStats.low || 0 ]]</h6>
+                                            </div>
+                                            <div class="alert alert-warning">
+                                                <h6>中风险: [[ fireRiskStats.medium || 0 ]]</h6>
+                                            </div>
+                                            <div class="alert alert-danger">
+                                                <h6>高风险: [[ fireRiskStats.high || 0 ]]</h6>
+                                            </div>
+                                            <div class="alert alert-dark">
+                                                <h6>极高风险: [[ fireRiskStats.extreme || 0 ]]</h6>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header bg-light">
+                                            <h5>系统概要</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <p>监测点总数: <strong>[[ summary.monitor_points_count ]]</strong></p>
+                                            <p>火灾记录总数: <strong>[[ summary.total_fire_records ]]</strong></p>
+                                            <p>过去7天高风险区域: <strong>[[ summary.high_risk_areas_last_week ]]</strong></p>
+                                            <p>平均火灾预测面积: <strong>[[ summary.avg_fire_area ]] km²</strong></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-12">
+                                    <div class="card">
+                                        <div class="card-header bg-light">
+                                            <h5>最近火灾记录</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="table-responsive">
+                                                <table class="table table-striped">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>监测点</th>
+                                                            <th>风速 (m/s)</th>
+                                                            <th>温度 (°C)</th>
+                                                            <th>湿度 (%)</th>
+                                                            <th>风险等级</th>
+                                                            <th>预测面积 (km²)</th>
+                                                            <th>时间</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr v-for="fire in recentFires" :key="fire.id">
+                                                            <td>[[ fire.monitor_point_name ]]</td>
+                                                            <td>[[ fire.wind_speed ]]</td>
+                                                            <td>[[ fire.temperature ]]</td>
+                                                            <td>[[ fire.humidity ]]</td>
+                                                            <td>
+                                                                <span :class="getRiskClass(fire.risk_level)">
+                                                                    [[ getRiskText(fire.risk_level) ]]
+                                                                </span>
+                                                            </td>
+                                                            <td>[[ fire.predicted_area ]]</td>
+                                                            <td>[[ fire.timestamp ]]</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 用户管理 -->
+                        <div v-if="currentView === 'users' && user.role === 'admin'">
+                            <h2>用户管理</h2>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="card">
+                                        <div class="card-header bg-light">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <h5>用户列表</h5>
+                                                </div>
+                                                <div class="col-md-6 text-right">
+                                                    <button class="btn btn-sm btn-success" @click="openAddUserModal()">新增用户</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="table-responsive">
+                                                <table class="table table-striped">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>用户名</th>
+                                                            <th>邮箱</th>
+                                                            <th>角色</th>
+                                                            <th>创建时间</th>
+                                                            <th>操作</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr v-for="u in users" :key="u.id">
+                                                            <td>[[ u.username ]]</td>
+                                                            <td>[[ u.email ]]</td>
+                                                            <td>[[ u.role === 'admin' ? '管理员' : '普通用户' ]]</td>
+                                                            <td>[[ u.created_at ]]</td>
+                                                            <td>
+                                                                <button class="btn btn-sm btn-info mr-1" @click="editUser(u)">编辑</button>
+                                                                <button class="btn btn-sm btn-primary mr-1" v-if="u.role !== 'admin'" @click="setAdmin(u.id)">设为管理员</button>
+                                                                <button class="btn btn-sm btn-warning mr-1" v-if="u.role === 'admin' && u.id !== user.id" @click="removeAdmin(u.id)">移除管理员</button>
+                                                                <button class="btn btn-sm btn-danger" v-if="u.id !== user.id" @click="deleteUser(u.id)">删除</button>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 各种模态框 -->
+        <!-- 添加用户模态框 -->
+        <div class="modal fade" id="addUserModal" tabindex="-1" role="dialog" aria-labelledby="addUserModalLabel" aria-hidden="true" v-if="showAddUserModal">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title" id="addUserModalLabel">添加新用户</h5>
+                        <button type="button" class="close" @click="showAddUserModal = false">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form @submit.prevent="addUser">
+                            <div class="form-group">
+                                <label>用户名</label>
+                                <input type="text" class="form-control" v-model="newUser.username" required>
+                            </div>
+                            <div class="form-group">
+                                <label>邮箱</label>
+                                <input type="email" class="form-control" v-model="newUser.email" required>
+                            </div>
+                            <div class="form-group">
+                                <label>密码</label>
+                                <input type="password" class="form-control" v-model="newUser.password" required>
+                            </div>
+                            <div class="form-group">
+                                <label>角色</label>
+                                <select class="form-control" v-model="newUser.role">
+                                    <option value="user">普通用户</option>
+                                    <option value="admin">管理员</option>
+                                </select>
+                            </div>
+                            <div class="text-right">
+                                <button type="button" class="btn btn-secondary" @click="showAddUserModal = false">取消</button>
+                                <button type="submit" class="btn btn-success">添加</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 编辑用户模态框 -->
+        <div class="modal fade" id="editUserModal" tabindex="-1" role="dialog" aria-labelledby="editUserModalLabel" aria-hidden="true" v-if="showEditUserModal">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-info text-white">
+                        <h5 class="modal-title" id="editUserModalLabel">编辑用户</h5>
+                        <button type="button" class="close" @click="showEditUserModal = false">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form @submit.prevent="updateUser">
+                            <div class="form-group">
+                                <label>用户名</label>
+                                <input type="text" class="form-control" v-model="editingUser.username" required>
+                            </div>
+                            <div class="form-group">
+                                <label>邮箱</label>
+                                <input type="email" class="form-control" v-model="editingUser.email" required>
+                            </div>
+                            <div class="form-group">
+                                <label>新密码 (留空表示不修改)</label>
+                                <input type="password" class="form-control" v-model="editingUser.password">
+                            </div>
+                            <div class="text-right">
+                                <button type="button" class="btn btn-secondary" @click="showEditUserModal = false">取消</button>
+                                <button type="submit" class="btn btn-info">保存</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 添加监测点模态框 -->
+        <div class="modal fade" id="addMonitorPointModal" tabindex="-1" role="dialog" aria-labelledby="addMonitorPointModalLabel" aria-hidden="true" v-if="showAddMonitorPointModal">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title" id="addMonitorPointModalLabel">添加新监测点</h5>
+                        <button type="button" class="close" @click="showAddMonitorPointModal = false">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form @submit.prevent="addMonitorPoint">
+                            <div class="form-group">
+                                <label>监测点名称</label>
+                                <input type="text" class="form-control" v-model="newMonitorPoint.name" required>
+                            </div>
+                            <div class="form-group">
+                                <label>纬度</label>
+                                <input type="number" step="0.000001" class="form-control" v-model="newMonitorPoint.latitude" required>
+                            </div>
+                            <div class="form-group">
+                                <label>经度</label>
+                                <input type="number" step="0.000001" class="form-control" v-model="newMonitorPoint.longitude" required>
+                            </div>
+                            <div class="text-right">
+                                <button type="button" class="btn btn-secondary" @click="showAddMonitorPointModal = false">取消</button>
+                                <button type="submit" class="btn btn-success">添加</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 添加监测记录模态框 -->
+        <div class="modal fade" id="addMonitorRecordModal" tabindex="-1" role="dialog" aria-labelledby="addMonitorRecordModalLabel" aria-hidden="true" v-if="showAddMonitorRecordModal">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="addMonitorRecordModalLabel">添加新监测记录</h5>
+                        <button type="button" class="close" @click="showAddMonitorRecordModal = false">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form @submit.prevent="addMonitorRecord">
+                            <div class="form-group">
+                                <label>监测点</label>
+                                <select class="form-control" v-model="newMonitorRecord.monitor_point_id" required>
+                                    <option v-for="point in monitorPoints" :key="point.id" :value="point.id">[[ point.name ]]</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>风速 (m/s)</label>
+                                <input type="number" step="0.1" class="form-control" v-model="newMonitorRecord.wind_speed" required>
+                            </div>
+                            <div class="form-group">
+                                <label>温度 (°C)</label>
+                                <input type="number" step="0.1" class="form-control" v-model="newMonitorRecord.temperature" required>
+                            </div>
+                            <div class="form-group">
+                                <label>湿度 (%)</label>
+                                <input type="number" step="0.1" class="form-control" v-model="newMonitorRecord.humidity" required>
+                            </div>
+                            <div class="text-right">
+                                <button type="button" class="btn btn-secondary" @click="showAddMonitorRecordModal = false">取消</button>
+                                <button type="submit" class="btn btn-primary">添加</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html> 

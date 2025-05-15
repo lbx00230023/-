@@ -1,0 +1,164 @@
+/* 全局样式 */
+body {
+    background-color: #0a2e0a;  /* 深绿色背景作为备用 */
+    background-image: url('../img/forest_bg.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    position: relative;
+    color: #333;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);  /* 稍微暗一点，让文字更清晰 */
+    z-index: -1;
+}
+
+/* 调整Vue分隔符 */
+[v-cloak] {
+    display: none;
+}
+
+/* 登录/注册卡片样式 */
+.card {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: rgba(255, 255, 255, 0.9);
+}
+
+.card-header {
+    border-bottom: 1px solid #e3e3e3;
+    padding: 15px;
+}
+
+.card-body {
+    padding: 20px;
+}
+
+/* 登录/注册链接样式 */
+.card-body a {
+    color: #28a745;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.card-body a:hover {
+    color: #218838;
+    text-decoration: underline;
+}
+
+/* 系统标题样式 */
+.system-title {
+    text-align: center;
+    color: #90ee90;  /* 淡绿色 */
+    font-size: 36px;
+    font-weight: bold;
+    margin: 30px 0;
+    text-shadow: 2px 2px 10px rgba(0, 100, 0, 0.7), 
+                -2px -2px 10px rgba(0, 0, 0, 0.7);
+    padding: 15px;
+    position: relative;
+}
+
+.system-title h1 {
+    position: relative;
+    display: inline-block;
+    padding: 0 20px;
+}
+
+.system-title h1:before,
+.system-title h1:after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(to right, transparent, #90ee90, transparent);
+}
+
+.system-title h1:before {
+    left: -70px;
+}
+
+.system-title h1:after {
+    right: -70px;
+}
+
+/* 导航栏透明度调整 */
+.navbar {
+    background-color: rgba(40, 167, 69, 0.9) !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* 按钮样式优化 */
+.btn-success {
+    background-color: #28a745;
+    border-color: #28a745;
+    transition: all 0.3s;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* 风险等级样式 */
+.risk-low {
+    color: green;
+    font-weight: bold;
+}
+
+.risk-medium {
+    color: orange;
+    font-weight: bold;
+}
+
+.risk-high {
+    color: red;
+    font-weight: bold;
+}
+
+.risk-extreme {
+    color: darkred;
+    font-weight: bold;
+}
+
+/* 表格样式 */
+.table th {
+    background-color: #f8f9fa;
+}
+
+/* 按钮样式调整 */
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+/* 模态框样式优化 */
+.modal-content {
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+}
+
+/* 动画效果 */
+.fade-enter-active, .fade-leave-active {
+    transition: opacity 0.5s;
+}
+.fade-enter, .fade-leave-to {
+    opacity: 0;
+} 

@@ -1,0 +1,36 @@
+{
+  "name": "forest-fire-prediction-system",
+  "version": "1.0.0",
+  "description": "森林防火预测监测系统",
+  "main": "server/index.js",
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "server": "nodemon server/index.js",
+    "dev": "concurrently \"npm run serve\" \"npm run server\""
+  },
+  "dependencies": {
+    "axios": "^0.21.4",
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.19.0",
+    "concurrently": "^6.2.1",
+    "cors": "^2.8.5",
+    "element-ui": "^2.15.6",
+    "express": "^4.17.1",
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^6.0.5",
+    "vue": "^2.6.14",
+    "vue-router": "^3.5.2",
+    "vuex": "^3.6.2"
+  },
+  "devDependencies": {
+    "@vue/cli-plugin-babel": "^4.5.13",
+    "@vue/cli-plugin-router": "^4.5.13",
+    "@vue/cli-plugin-vuex": "^4.5.13",
+    "@vue/cli-service": "^4.5.13",
+    "nodemon": "^2.0.12",
+    "sass": "^1.39.2",
+    "sass-loader": "^10.2.0",
+    "vue-template-compiler": "^2.6.14"
+  }
+} 
